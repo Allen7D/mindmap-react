@@ -1,35 +1,72 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState, useEffect } from 'react';
+import { Spin } from 'antd';
 
-function App() {
-  const [count, setCount] = useState(0)
+import Toolbar from '@/components/Toolbar';
+import Edit from '@/components/Edit';
+import { getLocalConfig } from '@/api';
+import useStore, { getUserMindMapData } from '@/store';
+
+import './App.less';
+
+const Index: React.FC = () => {
+  const [show, setShow] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const isZenMode = useStore((state) => state.localConfig.isZenMode);
+  const isDark = useStore((state) => state.localConfig.isDark);
+  const activeSidebar = useStore((state) => state.activeSidebar);
+  const setLocalConfig = useStore((state) => state.setLocalConfig);
+
+  useEffect(() => {
+    initLocalConfig();
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    setBodyDark();
+  }, [isDark]);
+
+  const initLocalConfig = () => {
+    const config = getLocalConfig();
+    if (config) {
+      setLocalConfig({
+        ...config
+      });
+    }
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    await getUserMindMapData();
+    setShow(true);
+    setLoading(false);
+    setBodyDark();
+  };
+
+  const setBodyDark = () => {
+    if (isDark) {
+      document.body.classList.add('isDark');
+    } else {
+      document.body.classList.remove('isDark');
+    }
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <Spin spinning={loading} tip="加载中...">
+      <div className={[
+        'container',
+        isDark ? 'isDark' : '',
+        activeSidebar ? 'activeSidebar' : ''
+      ].filter(Boolean).join(' ')}>
+        {show && (
+          <>
+            {!isZenMode && <Toolbar />}
+            <Edit />
+          </>
+        )}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    </Spin>
+  );
+};
 
-export default App
+export default Index;
